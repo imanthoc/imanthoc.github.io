@@ -17,26 +17,56 @@ h4 {
     margin-top:     30px;
 }
 
+.container {
+    
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.row {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.row:nth-child(1) {
+    justify-content: space-between;
+}
+
+.row:nth-child(2) {
+    justify-content: center;
+}
+
 .main {
-    margin-top:     -27px;
-    min-width:      900px;
-    max-width:      900px;
-    margin-left:    auto;
-    margin-right:   auto;
+    max-width:      700px;
     border:         2px solid black;
     padding:        7px;
+    margin-left:    auto;
+    margin-right:   auto;
+    position:       absolute;
+    left:           50%;
+    transform:      translateX(-50%);
+}
+
+.resume {
+    max-width:      700px;
+    border:         2px solid black;
+    padding:        7px;
+    margin-left:    auto;
+    margin-right:   auto;
+    position:       absolute;
+    left:           50%;
+    transform:      translateX(-50%);
 }
 
 .menu {
-    display:        inline-block;
-    max-width:      fit-content;
-    margin-left:    auto;
-    margin-right:   auto;
     border:         2px solid black;
     background-color: #60c8e0;
+    max-width:          130px;
 }
 
 .menulink {
+    display:        block;
     font-family:    monospace;
     font-size:      150%;
     padding-left:   5px;
@@ -47,3 +77,5 @@ h4 {
 .menulink:hover {
     background-color: white;
 }
+
+
