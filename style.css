@@ -4,6 +4,12 @@ p {
     margin:         auto;
 }
 
+a {
+    font-family:    monospace;
+    font-size:      150%;
+    margin:         auto;
+}
+
 li {
     font-family:    monospace;
     font-size:      150%;
@@ -42,6 +48,8 @@ h4 {
 }
 
 .pp-main {
+    background-color: black;
+    border-radius: 5px;
     max-width:      700px;
     border:         2px solid black;
     padding:        7px;
