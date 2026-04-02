@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>
+            IMANTHOC's corner of the internet
+        </title>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body style="background-color:#e0b860;"> 
+        <h4> Imanthoc's little corner of the internet</h4>
+        
+        <div class="flex-container">
+            <div class="row">
+                <div class="menu">
+                    <a href="index.html" class="menulink">Main</a>
+
+                        <div class="dropdown">
+                            <a href="#" class="menulink">Personal Projects</a>
+                            <div class="dropdown-content">
+                                <a href="games.html" class="menulink">Games Stuff</a>
+                                <a href="hrw.html" class="menulink">Hardware Stuff</a>
+                            </div>
+                        </div>
+
+                    <a href="about.html" class="menulink">About</a>
+                </div>
+                <h2 style="text-align:center;">Game Projects</h2>
+                <section class="project">
+                    <p>Haunted GameBoy Advance Game, C &amp; libgba,
+                    <a style="color: blue;" href="https://github.com/imanthoc/gbagame">here</a></p> <br/>
+                    <img style="max-width: 600px; display: block; margin: 0 auto;" src="imgs/gb1.png" />
+                    <img style="max-width: 600px; display: block; margin: 0 auto;" src="imgs/gb2.png" />
+                    <img style="max-width: 600px; display: block; margin: 0 auto;" src="imgs/gb3.png" />
+                </section>
+                <section class="project">
+                    <p>Text-Terminal based arcade like game, C++ & ncurses,
+                    <a style="color: blue;" href="https://github.com/imanthoc/TerminalCade">here</a></p> <br />
+                    <img style="height: 450px; display: block; margin: 0 auto;" src="imgs/tarc1.png" />
+                    <img style="height: 450px; display: block; margin: 0 auto;" src="imgs/tarc2.png" />
+                </section>
+                <section class="project">
+                    <p>Roguelike game for the Sega Genesis, C & SGDK,
+                    <a style="color: blue;" href="https://github.com/imanthoc/Genesis">here</a></p> <br/>
+                    <img style="max-width: 600px; display: block; margin: 0 auto;" src="imgs/g1.png" />
+                    <img style="max-width: 600px; display: block; margin: 0 auto;" src="imgs/g2.png" />
+                </section>
+                <section class="project">
+                    <p>Adventure game demo, C++ & SFML,
+                    <a style="color: blue;" href="https://github.com/imanthoc/Mine-Alley">here</a></p> <br/>
+                    <img style="max-width: 600px; display: block; margin: 0 auto;" src="imgs/m1.png" />
+                    <img style="max-width: 600px; display: block; margin: 0 auto;" src="imgs/m2.png" />
+                    <img style="max-width: 600px; display: block; margin: 0 auto;" src="imgs/m3.png" />
+                </section>
+                <section class="project">
+                    <p>Applerunner, C++ & SFML,
+                    <a style="color: blue;" href="https://github.com/imanthoc/applerunner">here</a></p> <br/>
+                    <img style="max-width: 600px; display: block; margin: 0 auto;" src="imgs/ap1.png" />
+                    <img style="max-width: 600px; display: block; margin: 0 auto;" src="imgs/ap2.png" />
+                </section>
+                <section class="project">
+                    <p>Original Gameboy Demo, z80 assembly</p> <br/>
+                    <img style="max-width: 600px; display: block; margin: 0 auto;" src="imgs/gb.png" />
+                    <pre><code>
+INCLUDE "hardware.inc"
+
+SECTION "Header", ROM0[$100]
+	jp entry_point
+	ds $150 - @, 0 				; ds = define space
+
+;@par de src
+;@par hl dst
+;@par bc len
+memcopy:
+	ld a, [de]		; a = *src
+	ld [hl+], a		; *dst = a, dst++
+	inc de			; src++
+	dec bc			; len--
+
+	ld a, b
+	or a, c			; b or c
+	jp nz, memcopy
+
+	ret
+
+update_keys:
+	; Poll half the controller
+	ld a, P1F_GET_BTN
+	call .onenibble
+	ld b, a ; B7-4 = 1; B3-0 = unpressed buttons
+
+	; Poll the other half
+	ld a, P1F_GET_DPAD
+	call .onenibble
+	swap a ; A7-4 = unpressed directions; A3-0 = 1
+	xor a, b ; A = pressed buttons + directions
+	ld b, a ; B = pressed buttons + directions
+
+	; And release the controller
+	ld a, P1F_GET_NONE
+	ldh [rP1], a
+
+	; Combine with previous cur_keys to make new_keys
+	ld a, [cur_keys]
+	xor a, b ; A = keys that changed state
+	and a, b ; A = keys that changed to pressed
+	ld [new_keys], a
+	ld a, b
+	ld [cur_keys], a
+	ret
+
+.onenibble
+	ldh [rP1], a ; switch the key matrix
+	call .knownret ; burn 10 cycles calling a known ret
+	ldh a, [rP1] ; ignore value while waiting for the key matrix to settle
+	ldh a, [rP1]
+	ldh a, [rP1] ; this read counts
+	or a, $F0 ; A7-4 = 1; A3-0 = unpressed keys
+.knownret
+	ret
+
+wait_vblank:
+	ld a, [rLY]
+	cp 144
+	jr c, wait_vblank
+	ret
+
+; borrowed from internet
+random_step:
+    ld b, a
+    rlca             ; Rotate left
+    bit 7, b
+    jr z, .no_xor
+    xor %00011101    ; Apply feedback taps (6,5,4,0)
+.no_xor:
+    ret
+
+create_random_position:
+loop_red_start:
+	ld a, [random_seed]
+	call random_step
+	ld [random_seed], a
+
+	cp a, 55
+	jr nc, loop_red_start
+loop_red_end:
+	add a, 56
+	ret
+
+scroll_road:
+	ld a, [rSCY]
+	sub a, 4
+	ld [rSCY], a
+	ret
+
+scroll_obstacle:
+	ld a, [_OAMRAM + 4]
+	add a, 4
+	ld [_OAMRAM + 4], a
+	ret
+
+randomize_obstacle_position:
+	ld a, [_OAMRAM + 4]
+
+	cp a, 150
+	jr c, end_if
+if_true:
+	call create_random_position
+	ld [_OAMRAM + 5], a
+
+	ld a, 0
+	ld [_OAMRAM + 4], a
+end_if:
+	ret
+
+check_collision:
+	ld a, [_OAMRAM + 1]
+	add a, 8				; a = car_x_end
+
+	ld b, a					; b = car_x_end
+	sub a, 8				; a = car_x_start
+	ld d, a					; d = car_x_start
+
+	ld a, [_OAMRAM + 5]
+	add a, 4				; c = obstacle_x_center
+	ld c, a
+	; d = car_x_start, b = car_x_end, c = obs_x_center
+
+	ld a, d
+	cp c					; compare car_start and obs_center
+	jr nc, no_col			; if car_x_start > obs_x_center
+
+	ld a, b
+	cp c					; compare car_end and obs_center
+	jr c, no_col			; if car_x_end < obs_center
+col_x:
+	 ld a, [_OAMRAM]		; a = car_y_start
+	 ld b, a				; b = car_y_start
+	 add a, 16
+	 ld c, a				; c = car_y_end
+	 ld a, [_OAMRAM + 4]
+	 add a, 4
+	 ld d, a				; d = obs_y_center
+
+	 ld a, b				; A = car_y_start
+	 cp d					; compare car_y_start with obs_y_center
+	 jr nc, no_col			; if car_y_start > obs_y_center
+
+	 ld a, c				; A = car_y_end
+	 cp d					; compare car_y_end with obs_y_center
+	 jr c, no_col			; if car_y_end < obs_y_center
+col_y:
+	jp col_y
+
+no_col:
+
+	ret
+move_car:
+check_up:
+	ld a, [cur_keys]
+	and a, PADF_UP
+	jp z, check_down
+up:
+	ld a, [_OAMRAM]
+	dec a
+	cp a, 17
+	jp z, check_down
+	ld [_OAMRAM], a
+
+check_down:
+	ld a, [cur_keys]
+	and a, PADF_DOWN
+	jp z, check_left
+down:
+	ld a, [_OAMRAM]
+	inc a
+	cp a, 143
+	jp z, check_left
+	ld [_OAMRAM], a
+
+check_left:
+	ld a, [cur_keys]
+	and a, PADF_LEFT
+	jp z, check_right
+left:
+	ld a, [_OAMRAM + 1]
+	dec a
+	cp a, 56
+	jp z, check_right
+	ld [_OAMRAM + 1], a
+
+check_right:
+	ld a, [cur_keys]
+	and a, PADF_RIGHT
+	jp z, exit
+right:
+	ld a, [_OAMRAM + 1]
+	inc a
+	cp a, 112
+	jp z, exit
+	ld [_OAMRAM + 1], a
+exit:
+	ret
+
+entry_point:
+	call wait_vblank
+
+	ld a, 0
+	ld [rLCDC], a
+
+; copy tiles
+	ld de, tiles
+	ld hl, $9000
+	ld bc, tiles_end - tiles
+	call memcopy
+
+; copy tilemap
+	ld de, tilemap
+	ld hl, $9800
+	ld bc, tilemap_end - tilemap
+	call memcopy
+
+; copy car
+	ld de, car
+	ld hl, $8000
+	ld bc, car_end - car
+	call memcopy
+; copy obstacle
+	ld de, obstacle
+	ld hl, $8020
+	ld bc, obstacle_end - obstacle
+	call memcopy
+
+; clear oam
+	ld a, 0
+	ld hl, _OAMRAM
+	ld b, 160
+clear_oamram:
+	ld [hl+], a
+
+	dec b
+	jp nz, clear_oamram
+
+	ld hl, _OAMRAM
+; load car object
+	ld a, 120 + 16
+	ld [hl+], a
+	ld a, 64 + 8
+	ld [hl+], a
+	ld a, 0
+	ld [hl+], a
+	ld [hl+], a
+; load obstacle object
+	ld hl, _OAMRAM
+	ld de, 4
+	add hl, de
+	ld a, 30 + 16
+	ld [hl+], a
+	ld a, 64 + 8
+	ld [hl+], a
+	ld a, 2
+	ld [hl+], a
+	ld a, 0
+	ld [hl+], a
+; turn lcd on
+	ld a, LCDCF_ON | LCDCF_BGON | LCDCF_OBJON | LCDCF_OBJ16
+    ld [rLCDC], a
+	ld a, %11100100
+	ld [rBGP], a
+	ld a, %11100100
+	ld [rOBP0], a
+
+; initialize global variables.
+	ld a, 0
+	ld [frame_counter], a
+	ld [cur_keys], a
+	ld [new_keys], a
+
+	ld a, [$FF04]
+	ld [random_seed], a
+main_loop:
+	ld a, [rLY]
+	cp 144
+	jp nc, main_loop
+
+	call wait_vblank
+
+	call update_keys
+
+	call move_car
+	call scroll_road
+	call scroll_obstacle
+	call randomize_obstacle_position
+	call check_collision
+
+	jp main_loop
+
+INCLUDE "sprites.asm"
+
+section "Counter", WRAM0
+frame_counter: db
+
+section "Input variables", WRAM0
+cur_keys: db
+new_keys: db
+
+section "Random seed", WRAM0
+random_seed: db
+
+tiles:
+	dw `31111111
+	dw `31111111
+	dw `31111111
+	dw `31111111
+	dw `31111111
+	dw `31111111
+	dw `31111111
+	dw `31111111
+
+	dw `11111111
+	dw `11111111
+	dw `11111111
+	dw `11111111
+	dw `11111111
+	dw `11111111
+	dw `11111111
+	dw `11111111
+
+	dw `11111113
+	dw `11111113
+	dw `11111113
+	dw `11111113
+	dw `11111113
+	dw `11111113
+	dw `11111113
+	dw `11111113
+tiles_end:
+
+tilemap:
+	db 1,1,1,1,1,1, $00, $01, $01, $02, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $02, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $02, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $02, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $02, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $02, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $02, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $02, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $01, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $01, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $01, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $01, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $01, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $01, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $01, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $01, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $02, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $02, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $02, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $02, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $02, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $02, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $02, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $02, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $01, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $01, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $01, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $01, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $01, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $01, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $01, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+	db 1,1,1,1,1,1, $00, $01, $01, $01, $01, $01, $01, $02, 1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0
+tilemap_end:
+
+
+car:
+db $00,$3C,$66,$7E,$00,$7E,$99,$FF
+db $BD,$FF,$BD,$FF,$00,$7E,$00,$7E
+db $00,$7E,$00,$7E,$81,$FF,$BD,$FF
+db $BD,$FF,$00,$7E,$00,$00,$00,$00
+car_end:
+
+obstacle:
+db $00, $00, $00, $00, $00, $00, $00, $00
+db $00, $00, $00, $00, $00, $00, $00, $00
+db $18,$18,$1C,$1C,$7E,$76,$C3,$FF
+db $F9,$DF,$77,$4F,$7C,$7C,$10,$10
+obstacle_end:
+                    </code></pre>
+                </section>
+            </div>
+        </div>
+    </body>
+</html>
